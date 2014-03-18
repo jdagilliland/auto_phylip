@@ -17,7 +17,13 @@ def tab2phy(tabfile, germline=None, outfile=None):
     if outfile == None:
         outfile = tabfile.rpartition('.')[0] + '.phy'
     with open(outfile,'wb') as f:
-        f.write(str(n_clone).ljust(10,' ') + str(len_clone) + '\n')
+        # write header info
+        f.write(_phyrow(n_clone, len_clone))
+        # write sequences from tabfile
         for seqpair in lst_seqpair:
-            f.write(seqpair[0].ljust(10,' ') + seqpair[1] + '\n')
+            f.write(_phyrow(*seqpair))
+    return None
+
+def _phyrow(name, sequence):
+    return str(name).ljust(10,' ') + str(sequence) + '\n'
     return None
