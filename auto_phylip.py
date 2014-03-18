@@ -10,6 +10,8 @@ def tab2phy(tabfile, germline=None, outfile=None):
     # lst_seqpairs is a list of tuples (sequence id <9-char>, sequence)
     lst_seqpair = [(entry['SEQUENCE_ID'][-9:],entry['SEQUENCE'])
         for entry in lst_dict_entries]
+    if germline:
+        lst_seqpair = [('Germline', germline)] + lst_seqpair
     n_clone = len(lst_seqpair)
     # WARNING here I assume that all sequences in the tabfile have the same
     # length
