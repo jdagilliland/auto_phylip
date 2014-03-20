@@ -19,7 +19,7 @@ def tab2phy(tabfile, germline=None, outfile=None, **kwarg):
         lst_seqpair = [('Germline', germline)] + lst_seqpair
     else:
         dict_germline_seq = dict(
-            [(entry['CLONE'], entry['GERMLINE_GAP_DMASK'])
+            [(entry['CLONE'], entry.get('GERMLINE_GAP_DMASK'))
             for entry in lst_dict_entries]
             )
         
