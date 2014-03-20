@@ -8,7 +8,7 @@ import subprocess as sub
 phy_exec_default = ['phylip','dnapars']
 lst_phy_opts_default = ['S','Y','I','4','5','.']
 
-def tab2phy(tabfile, germline=None, outfile=None):
+def tab2phy(tabfile, germline=None, outfile=None, **kwarg):
     with open(tabfile,'rb') as f:
         reader = csv.DictReader(f,delimiter='\t')
         lst_dict_entries = [row for row in reader]
@@ -17,15 +17,21 @@ def tab2phy(tabfile, germline=None, outfile=None):
         for entry in lst_dict_entries]
     if germline:
         lst_seqpair = [('Germline', germline)] + lst_seqpair
-    n_clone = len(lst_seqpair)
+    else:
+        dict_germline_seq = dict(
+            [(entry['CLONE'], entry['GERMLINE_GAP_DMASK'])
+            for entry in lst_dict_entries]
+            )
+        
+    n_seq = len(lst_seqpair)
     # WARNING here I assume that all sequences in the tabfile have the same
     # length
-    len_clone = len(lst_seqpair[0][1])
+    len_seq = len(lst_seqpair[0][1])
     if outfile == None:
         outfile = tabfile.rpartition('.')[0] + '.phy'
     with open(outfile,'wb') as f:
         # write header info
-        f.write(_phyrow(n_clone, len_clone))
+        f.write(_phyrow(n_seq, len_seq))
         # write sequences from tabfile
         for seqpair in lst_seqpair:
             f.write(_phyrow(*seqpair))
