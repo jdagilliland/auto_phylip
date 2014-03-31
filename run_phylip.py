@@ -1,8 +1,14 @@
 #!/usr/bin/env python
-import sys
-
 import auto_phylip
 
 if __name__ == '__main__':
-    auto_phylip.run_phylip(sys.argv[1])
+    import argparse
+    parser = argparse.ArgumentParser(
+        description=("Run PHYLIP program to build trees from sequences in a" +
+            " PHYLIP formatted file."),
+        )
+    parser.add_argument('files', nargs='+')
+    argspace = parser.parse_args()
+    for fname in argspace.files:
+        auto_phylip.run_phylip(fname)
 
