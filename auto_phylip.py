@@ -27,6 +27,25 @@ def _entry2seqpair(entry):
     return (entry['SEQUENCE_ID'][-9:],entry['SEQUENCE'])
 
 def lst_entries2phy(lst_dict_entries, outfile, **kwarg):
+    """
+    Write a list of tabfile entries `lst_dict_entries` to a PHYLIP formatted
+    `outfile`.
+
+    Parameters
+    ----------
+    lst_dict_entries : list
+        A list of dictionaries which each represent a row of data from a
+        tabfile.
+    outfile : str
+        A filename to which to output the PHYLIP formatted data.
+        This is mandatory at this level, since there is no other way to
+        handle coming up with an output filename given the args.
+    germline : str, optional, no-op
+
+    Returns
+    -------
+    None
+    """
     germline = kwarg.pop('germline', None)
     # lst_seqpairs is a list of tuples (sequence id <9-char>, sequence)
     lst_seqpair = [_entry2seqpair(entry) for entry in lst_dict_entries]
