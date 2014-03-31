@@ -60,6 +60,9 @@ def lst_entries2phy(lst_dict_entries, outfile, **kwarg):
     # WARNING here I assume that all sequences in the tabfile have the same
     # length
     len_seq = len(lst_seqpair[0][1])
+    for seqpair in lst_seqpair:
+        if len(seqpair[1]) != len_seq:
+            raise ValueError('''Not all sequences are of the same length.''')
     with open(outfile,'wb') as f:
         # write header info
         f.write(_phyrow(n_seq, len_seq))
