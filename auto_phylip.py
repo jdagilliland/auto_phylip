@@ -18,6 +18,8 @@ def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
         match=match, column=column, flags=flags)
     if outfile == None and len(lst_tabfile) == 1:
         outfile = lst_tabfile[0].rpartition('.')[0] + '.phy'
+    elif outfile == None:
+        outfile = 'file.phy'
     lst_entries2phy(lst_dict_entries, outfile)
     return None
 
