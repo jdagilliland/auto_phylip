@@ -57,8 +57,8 @@ def lst_entries2phy(lst_dict_entries, outfile, **kwarg):
             for entry in lst_dict_entries]
             )
     n_seq = len(lst_seqpair)
-    # WARNING here I assume that all sequences in the tabfile have the same
-    # length
+    if n_seq == 0:
+        raise ValueError('''No matches found.''')
     len_seq = len(lst_seqpair[0][1])
     for seqpair in lst_seqpair:
         if len(seqpair[1]) != len_seq:
