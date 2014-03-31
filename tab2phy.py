@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-import sys
-
 import auto_phylip
 
 if __name__ == '__main__':
