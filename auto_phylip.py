@@ -4,17 +4,30 @@ auto_phylip contains functions to handle Phylip programs.
 import csv
 import os
 import subprocess as sub
+import re
 
 phy_exec_default = ['phylip','dnapars']
 lst_phy_opts_default = ['S','Y','I','4','5','.']
 
-def tab2phy(tabfile, germline=None, outfile=None, **kwarg):
-    with open(tabfile,'rb') as f:
-        reader = csv.DictReader(f,delimiter='\t')
-        lst_dict_entries = [row for row in reader]
+def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
+    match = kwarg.pop('match', None)
+    column = kwarg.pop('column', 'CLONE')
+    flags = kwarg.pop('flags', 0)
+    lst_dict_entries = _gather_entries(lst_tabfile)
+    lst_dict_entries = _filter_entries(lst_dict_entries,
+        match=match, column=column, flags=flags)
+    if outfile == None and len(lst_tabfile) == 1:
+        outfile = lst_tabfile[0].rpartition('.')[0] + '.phy'
+    lst_entries2phy(lst_dict_entries, outfile)
+    return None
+
+def _entry2seqpair(entry):
+    return (entry['SEQUENCE_ID'][-9:],entry['SEQUENCE'])
+
+def lst_entries2phy(lst_dict_entries, outfile, **kwarg):
+    germline = kwarg.pop('germline', None)
     # lst_seqpairs is a list of tuples (sequence id <9-char>, sequence)
-    lst_seqpair = [(entry['SEQUENCE_ID'][-9:],entry['SEQUENCE'])
-        for entry in lst_dict_entries]
+    lst_seqpair = [_entry2seqpair(entry) for entry in lst_dict_entries]
     if germline:
         lst_seqpair = [('Germline', germline)] + lst_seqpair
     else:
@@ -22,13 +35,10 @@ def tab2phy(tabfile, germline=None, outfile=None, **kwarg):
             [(entry['CLONE'], entry.get('GERMLINE_GAP_DMASK'))
             for entry in lst_dict_entries]
             )
-        
     n_seq = len(lst_seqpair)
     # WARNING here I assume that all sequences in the tabfile have the same
     # length
     len_seq = len(lst_seqpair[0][1])
-    if outfile == None:
-        outfile = tabfile.rpartition('.')[0] + '.phy'
     with open(outfile,'wb') as f:
         # write header info
         f.write(_phyrow(n_seq, len_seq))
@@ -36,6 +46,61 @@ def tab2phy(tabfile, germline=None, outfile=None, **kwarg):
         for seqpair in lst_seqpair:
             f.write(_phyrow(*seqpair))
     return None
+def _gather_entries(lst_file):
+    """
+    Gather tabfile entries from a list of tabfiles.
+    """
+    lst_entries = list()
+    for tabfile in lst_file:
+        with open(tabfile,'rb') as f:
+            reader = csv.DictReader(f,delimiter='\t')
+            lst_entries.extend([row for row in reader])
+    return lst_entries
+
+def _filter_entries(lst_dict_entries, match=None, column='CLONE', flags=0):
+    """
+    Filter a list of tab file entries `lst_dict_entries` by matching
+    the text in a give column `column` to the regex string provided in
+    `match`.
+
+    Parameters
+    ----------
+    lst_dict_entries : list
+        A list of dictionaries which each represent a row of data from a
+        tabfile.
+    match : str
+        A regex string to match entries.
+    column : str, optional
+        The column whose data to match (default: 'CLONE').
+    flags : int, optional
+        An int representing the flags to apply for the regex matching
+        (default: 0, no flags).
+
+    Returns
+    -------
+    lst_dict_entries_match : list
+        A list of dict entries filtered by the selected column matching the
+        regex.
+    """
+    if type(match) == str:
+        reg_match = re.compile(match, flags)
+#    elif type(match) == _sre.SRE_Pattern:
+#        # check if the provided match is a compiled regex, if so, use as is
+#        reg_match = match
+    elif match == None:
+        # if match not provided, return the supplied lst_dict_entries
+        # unchanged
+        return lst_dict_entries
+    else:
+        print(match)
+        print(type(match))
+        raise TypeError('''`match` is of inappropriate type, must be `str`
+            or compiled regex.''')
+    # I use the match function, because I want users to be specific about
+    # whether they want to match the beginning of the string or w/e.
+    lst_dict_entries_match = [entry for entry in lst_dict_entries if
+        reg_match.match(entry.get(column))]
+    return lst_dict_entries_match
 
 def _phyrow(name, sequence):
     return str(name).ljust(10,' ') + str(sequence) + '\n'
