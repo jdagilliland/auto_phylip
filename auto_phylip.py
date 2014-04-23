@@ -72,15 +72,23 @@ def lst_entries2phy(lst_dict_entries, outfile, **kwarg):
         for seqpair in lst_seqpair:
             f.write(_phyrow(*seqpair))
     return None
+
 def _gather_entries(lst_file):
     """
     Gather tabfile entries from a list of tabfiles.
     """
     lst_entries = list()
     for tabfile in lst_file:
-        with open(tabfile,'rb') as f:
-            reader = csv.DictReader(f,delimiter='\t')
-            lst_entries.extend([row for row in reader])
+        lst_entries.extend(_get_entries(tabfile))
+    return lst_entries
+
+def _get_entries(tabfile):
+    """
+    Get tabfile entries from a tabfile
+    """
+    with open(tabfile,'rb') as f:
+        reader = csv.DictReader(f,delimiter='\t')
+        lst_entries = [row for row in reader]
     return lst_entries
 
 def _filter_entries(lst_dict_entries, match=None, column='CLONE', flags=0):
