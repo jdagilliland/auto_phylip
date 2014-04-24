@@ -7,8 +7,17 @@ if __name__ == '__main__':
         description=("Run PHYLIP program to build trees from sequences in a" +
             " PHYLIP formatted file."),
         )
+    parser.add_argument('-c', '--command',
+            dest='command',
+            default=None,
+            )
     parser.add_argument('files', nargs='+')
     argspace = parser.parse_args()
+    if argspace.command == None:
+        lst_cmd_arg = None
+    else:
+        lst_cmd_arg = argspace.command.split(' ')
+    print('''Using {args} to run PHYLIP'''.format(args=lst_cmd_arg))
     for fname in argspace.files:
-        auto_phylip.run_phylip(fname)
+        auto_phylip.run_phylip(fname, phy_exec=lst_cmd_arg)
 

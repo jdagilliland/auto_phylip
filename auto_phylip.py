@@ -141,9 +141,8 @@ def _phyrow(name, sequence):
 
 def run_phylip(
     phy_in,
-    phy_exec=phy_exec_default,
     lst_phy_opts=lst_phy_opts_default,
-    ):
+    **kwarg):
     """
     Run a phylip program with a given phylip executable, and given options.
 
@@ -166,6 +165,10 @@ def run_phylip(
         and must be in the proper order to be meaningful.
         Default is: ['S','Y','I','4','5','.'].
     """
+    # if phy_exec is provided, or None, use default
+    phy_exec = kwarg.pop('phy_exec', None)
+    if phy_exec == None:
+        phy_exec = phy_exec_default
     basename = phy_in.rpartition('.')[0]
     # remove old files
     if os.path.lexists('infile'):
