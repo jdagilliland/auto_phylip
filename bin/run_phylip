@@ -10,6 +10,19 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--command',
             dest='command',
             default=None,
+            help="""
+            Input an string (quoted for 2 or more space separated args),
+            which will be the base PHYLIP executable for the runner.
+            e.g. 'phylip dnapars' to use DNA parsimony (the most tested
+            by the author of this runner),
+            or 'phylip dnacomp' to use DNA compatibility,
+            or 'phylip dnapenny' to use branch and bound search for trees
+            (note, dnapenny may not be practical for more than 10 or 11
+            sequences),
+            'phylip dnaml' to use DNA maximum likelihood.
+            Not all PHYLIP programs that one might choose will output trees,
+            or exhibit the predictable behavior on which this script depends.
+            """
             )
     parser.add_argument('files', nargs='+')
     argspace = parser.parse_args()
