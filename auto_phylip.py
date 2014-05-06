@@ -8,6 +8,7 @@ import re
 
 phy_exec_default = ['phylip','dnapars']
 lst_phy_opts_default = ['S','Y','I','4','5','.']
+n_bootstrap_default = 1000
 
 def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
     match = kwarg.pop('match', None)
@@ -223,6 +224,26 @@ def _run_phylip_main():
             or exhibit the predictable behavior on which this script depends.
             """
             )
+    parser.add_argument('-b', '--bootstrap',
+            dest='bootstrap',
+            const=n_bootstrap_default, # default number of replicates
+            nargs='?',
+            default=False,
+            type=int,
+            help="""
+            Provide a number of bootstrap replicates to use for phylip
+            seqboot.
+            If you do not include this flag, seqboot will not be used (i.e.
+            1 bootstrap).
+            If you include this flag with an integer argument,
+            that number of bootstrap replicates will be used.
+            Be careful with large number of bootstraps, since the phylogeny
+            inference will have to be run that much more.
+            If you include this flag without any argument, a default value
+            will be used.
+            (default is {default})
+            """.format(default=n_bootstrap_default),
+            )
     parser.add_argument('files', nargs='+')
     argspace = parser.parse_args()
     if argspace.command == None:
@@ -231,7 +252,10 @@ def _run_phylip_main():
         lst_cmd_arg = argspace.command.split(' ')
     print('''Using {args} to run PHYLIP'''.format(args=lst_cmd_arg))
     for fname in argspace.files:
-        run_phylip(fname, phy_exec=lst_cmd_arg)
+        run_phylip(fname,
+                phy_exec=lst_cmd_arg,
+                bootstrap=argspace.bootstrap,
+                )
 
 def _tab2phy_main():
     import argparse
