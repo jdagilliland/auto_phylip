@@ -199,3 +199,65 @@ def run_phylip(
         os.remove(cmdfname)
     except: raise
     return None
+
+def _run_phylip_main():
+    import argparse
+    parser = argparse.ArgumentParser(
+        description=("Run PHYLIP program to build trees from sequences in a" +
+            " PHYLIP formatted file."),
+        )
+    parser.add_argument('-c', '--command',
+            dest='command',
+            default=None,
+            help="""
+            Input an string (quoted for 2 or more space separated args),
+            which will be the base PHYLIP executable for the runner.
+            e.g. 'phylip dnapars' to use DNA parsimony (the most tested
+            by the author of this runner),
+            or 'phylip dnacomp' to use DNA compatibility,
+            or 'phylip dnapenny' to use branch and bound search for trees
+            (note, dnapenny may not be practical for more than 10 or 11
+            sequences),
+            'phylip dnaml' to use DNA maximum likelihood.
+            Not all PHYLIP programs that one might choose will output trees,
+            or exhibit the predictable behavior on which this script depends.
+            """
+            )
+    parser.add_argument('files', nargs='+')
+    argspace = parser.parse_args()
+    if argspace.command == None:
+        lst_cmd_arg = None
+    else:
+        lst_cmd_arg = argspace.command.split(' ')
+    print('''Using {args} to run PHYLIP'''.format(args=lst_cmd_arg))
+    for fname in argspace.files:
+        run_phylip(fname, phy_exec=lst_cmd_arg)
+
+def _tab2phy_main():
+    import argparse
+    parser = argparse.ArgumentParser(
+        description='Build a phylip formatted file from a tabfile.',
+        )
+    parser.add_argument('files', nargs='+')
+    parser.add_argument('-m','--match',
+        dest='match',
+        default=None,
+        )
+    parser.add_argument('-f','--field',
+        dest='column',
+        default='CLONE',
+        )
+    parser.add_argument('-c','--combine',
+        dest='phyfname',
+        nargs='?',
+        const='file.phy',
+        default=None,
+#        default='file.phy',
+        )
+    argspace = parser.parse_args()
+    tab2phy(
+        argspace.files,
+        outfile=argspace.phyfname,
+        match=argspace.match,
+        column=argspace.column,
+        )
