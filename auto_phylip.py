@@ -145,9 +145,10 @@ def run_phylip(
     lst_phy_opts=lst_phy_opts_default,
     **kwarg):
     """
-    Run a phylip program with a given phylip executable, and given options.
+    Run a phylip program with a given phylogeny generating executable,
+    and given options.
 
-    The given phylip program is run on the given input file, with the given
+    The given phylogeny program is run on the given input file, with the given
     options, and the output files 'outfile' and 'outtree' are renamed to
     `basename`.out, and `basename`.tree respectively.
     `basename` is derived from the input file name.
@@ -165,11 +166,16 @@ def run_phylip(
         These need to be carefully considered prior to running,
         and must be in the proper order to be meaningful.
         Default is: ['S','Y','I','4','5','.'].
+    bootstrap : int, optional
+        The number of bootstrap iterations for seqboot.
+        If not specified, seqboot is skipped.
     """
     # if phy_exec is provided, or None, use default
     phy_exec = kwarg.pop('phy_exec', None)
     if phy_exec == None:
         phy_exec = phy_exec_default
+    # it bootstrap is provided use, otherwise None
+    bootstrap = kwarg.pop('bootstrap', None)
     basename = phy_in.rpartition('.')[0]
     # remove old files
     if os.path.lexists('infile'):
@@ -201,6 +207,15 @@ def run_phylip(
     except: raise
     return None
 
+def _get_seqboot_opts(fname, n_bootstrap, weights=False):
+    lst_seqboot_opts = []
+    lst_seqboot_opts.append(fname)
+    lst_seqboot_opts.append('R')
+    lst_seqboot_opts.append(n_bootstrap)
+    if weights:
+        lst_seqboot_opts.append('W')
+    return lst_seqboot_opts
+
 def _run_phylip_main():
     import argparse
     parser = argparse.ArgumentParser(
@@ -228,7 +243,7 @@ def _run_phylip_main():
             dest='bootstrap',
             const=n_bootstrap_default, # default number of replicates
             nargs='?',
-            default=False,
+            default=None,
             type=int,
             help="""
             Provide a number of bootstrap replicates to use for phylip
