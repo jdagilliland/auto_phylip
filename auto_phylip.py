@@ -8,7 +8,7 @@ import re
 
 phy_exec_default = ['phylip','dnapars']
 boot_exec_default = ['phylip', 'seqboot']
-lst_phy_opts_default = ['S','Y','I','4','5','.']
+lst_phy_opts_default = ['S','Y','I','4','5','.','Y']
 n_bootstrap_default = 1000
 
 def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
@@ -188,12 +188,8 @@ def run_phylip(
     if os.path.lexists('outtree'):
         os.remove('outtree')
     # write a command file with the specified options
-    cmdfname = '.cmdfile'
-    with open(cmdfname,'w') as f:
-        f.write(phy_in + '\n')
-        for arg in lst_phy_opts:
-            f.write(arg + '\n')
-        f.write('Y')
+    lst_phy_opts.insert(0, phy_in)
+    cmdfname = write_cmdfile(lst_phy_opts, trailing_nl=False)
     # open phylip process
     p = sub.Popen(phy_exec, stdin=sub.PIPE)
     # send command file contents as input, wait for output
@@ -216,15 +212,11 @@ def run_seqboot(fname, n_bootstrap, **kwarg):
     """
     boot_exec = kwarg.pop('boot_exec', boot_exec_default)
     seqboot_opts = _get_seqboot_opts(fname, n_bootstrap, **kwarg)
+    # remove old files
     if os.path.lexists('outfile'):
         os.remove('outfile')
-    cmdfname = '.cmdfile'
-    with open(cmdfname, 'w') as f:
-        f.write(fname + '\n')
-        for arg in seqboot_opts:
-            f.write(arg + '\n')
-            pass
-        pass
+    # write a command file with the specified options
+    cmdfname = write_cmdfile(seqboot_opts)
     # open phylip process
     p = sub.Popen(boot_exec, stdin=sub.PIPE)
     # send command file contents as input, wait for output
@@ -241,12 +233,42 @@ def run_seqboot(fname, n_bootstrap, **kwarg):
     except: raise
     return bootname
 
+def write_cmdfile(opts, trailing_nl=False):
+    """
+    Writes a command file for use with PHYLIP programs based on the supplied
+    list of options.
+
+    Parameters
+    ----------
+    opts : list
+        A list of strings to write to the commandfile separated by newlines.
+    trailing_nl : bool
+        Whether or not to add a trailing newline character at the end of the
+        file (default: False).
+
+    Notes
+    -----
+    The last option in `opts` will be written without a trailing newline
+    unless otherwise specified.
+    This is appropriate behavior for _most_ PHYLIP programs.
+    """
+    cmdfname = '.cmdfile'
+    with open(cmdfname,'w') as f:
+        for arg in opts[:-1]:
+            f.write(arg + '\n')
+        f.write(opts[-1])
+    return cmdfname
+
 #lst_phy_opts_default = ['S','Y','I','4','5','.']
 def _get_phy_opts(fname, bootstrap, **kwarg):
     opts = list()
     opts.append(fname)
     opts.append('S')
     opts.append('Y')
+    opts.append('I')
+    opts.append('4')
+    opts.append('5')
+    opts.append('.')
     return opts
 
 def _get_seqboot_opts(fname, n_bootstrap, weights=False, seed=7):
