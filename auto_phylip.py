@@ -258,6 +258,10 @@ def write_cmdfile(opts, trailing_nl=False):
     return cmdfname
 
 def _get_phy_opts(fname, bootstrap, **kwarg):
+    # SLOPPY: hardcoded arbitrary constant
+    seed = 7 # must be odd for some reason!?
+    # SLOPPY: hardcoded arbitrary constant
+    jumble = 10
     opts = list()
     # first the filename
     opts.append(fname)
@@ -270,6 +274,18 @@ def _get_phy_opts(fname, bootstrap, **kwarg):
     if not bootstrap:
         # specify sequential rather than interleaved data
         opts.append('I')
+    if bootstrap:
+        # specify multiple datasets
+        opts.append('M')
+        # specify that the data is multiple, not the weights (right now I
+        # don't even use weights)
+        opts.append('D')
+        # specify the number of datasets, the same as the number of
+        # bootstraps
+        opts.append(str(bootstrap))
+        # provide the seed
+        opts.append(str(seed))
+        opts.append(str(jumble))
     # these options make the output more rich and thorough
     #-----------------
     opts.append('4')#|
