@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+import auto_phylip
+
+auto_phylip._run_consense_main()
+

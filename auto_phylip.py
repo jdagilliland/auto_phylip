@@ -8,6 +8,8 @@ import re
 
 phy_exec_default = ['phylip','dnapars']
 boot_exec_default = ['phylip', 'seqboot']
+cons_exec = ['phylip', 'consense']
+
 n_bootstrap_default = 1000
 
 def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
@@ -231,6 +233,36 @@ def run_seqboot(fname, n_bootstrap, **kwarg):
     except: raise
     return bootname
 
+def run_consense(fname, **kwarg):
+    """
+    Run consense on a given set of bootstrapped trees to form a consensus tree.
+    """
+    consense_opts = _get_consense_opts(fname, **kwarg)
+    # remove old files
+    if os.path.lexists('intree'):
+        os.remove('intree')
+    if os.path.lexists('outfile'):
+        os.remove('outfile')
+    if os.path.lexists('outtree'):
+        os.remove('outtree')
+    # write a command file with the specified options
+    cmdfname = write_cmdfile(consense_opts)
+    # open phylip process
+    p = sub.Popen(cons_exec, stdin=sub.PIPE)
+    # send command file contents as input, wait for output
+    p.communicate(open(cmdfname,'r').read())
+    basename = fname.rpartition('.')[0]
+    try:
+        os.rename('outfile', basename + '.cons.out')
+        os.rename('outtree', basename + '.cons.tree')
+    except:
+        print('The expected output was not generated. Phylip may have failed')
+        raise
+    try:
+        os.remove(cmdfname)
+    except: raise
+    return None
+
 def write_cmdfile(opts, trailing_nl=False):
     """
     Writes a command file for use with PHYLIP programs based on the supplied
@@ -309,6 +341,30 @@ def _get_seqboot_opts(fname, n_bootstrap, weights=False, seed=7):
     lst_seqboot_opts.append('Y')
     lst_seqboot_opts.append(str(seed))
     return lst_seqboot_opts
+
+def _get_consense_opts(fname, **kwarg):
+    cons_type = kwarg.pop('type', 'mre')
+    opts = list()
+    opts.append(fname)
+    # select consensus type
+    if cons_type == 'mre':
+        pass
+    elif cons_type == 'strict':
+        # not implemented
+        pass
+    elif cons_type == 'mr':
+        # not implemented
+        pass
+    elif cons_type == 'ml':
+        # not implemented
+        pass
+    else:
+        print(cons_type)
+        raise ValueError(
+                'Invalid consensus type {cons}'.format(cons=cons_type))
+    # confirm options
+    opts.append('Y')
+    return opts
 
 def _run_phylip_main():
     import argparse
@@ -396,6 +452,21 @@ def _run_seqboot_main():
     for fname in argspace.files:
         run_seqboot(fname, argspace.bootstrap,
                 )
+    return None
+
+def _run_consense_main():
+    import argparse
+    parser = argparse.ArgumentParser(
+            description='''Build a consensus tree from bootstrapped trees''',
+            )
+    parser.add_argument('files', nargs='+')
+    argspace = parser.parse_args()
+    for fname in argspace.files:
+        run_consense(
+                fname,
+                )
+    ### resume here
+    return None
 
 def _tab2phy_main():
     import argparse
@@ -425,3 +496,4 @@ def _tab2phy_main():
         match=argspace.match,
         column=argspace.column,
         )
+    return None

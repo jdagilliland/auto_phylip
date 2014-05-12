@@ -10,6 +10,7 @@ setup(
             'bin/run_phylip',
             'bin/tab2phy',
             'bin/run_seqboot',
+            'bin/run_consense',
             ],
         license='LICENSE.txt',
         description='Utilities to help with using PHYLIP',
