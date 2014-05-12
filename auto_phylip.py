@@ -204,6 +204,9 @@ def run_phylip(
     try:
         os.remove(cmdfname)
     except: raise
+    if bootstrap:
+        # run consense only if bootstrapping was performed
+        run_consense(basename + '.tree', **kwarg)
     return None
 
 def run_seqboot(fname, n_bootstrap, **kwarg):
