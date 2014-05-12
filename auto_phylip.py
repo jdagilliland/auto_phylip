@@ -7,6 +7,7 @@ import subprocess as sub
 import re
 
 phy_exec_default = ['phylip','dnapars']
+boot_exec_default = ['phylip', 'seqboot']
 lst_phy_opts_default = ['S','Y','I','4','5','.']
 n_bootstrap_default = 1000
 
@@ -176,6 +177,8 @@ def run_phylip(
         phy_exec = phy_exec_default
     # it bootstrap is provided use, otherwise None
     bootstrap = kwarg.pop('bootstrap', None)
+    if bootstrap:
+        phy_in = run_seqboot(phy_in, bootstrap)
     basename = phy_in.rpartition('.')[0]
     # remove old files
     if os.path.lexists('infile'):
@@ -207,13 +210,57 @@ def run_phylip(
     except: raise
     return None
 
-def _get_seqboot_opts(fname, n_bootstrap, weights=False):
+def run_seqboot(fname, n_bootstrap, **kwarg):
+    """
+    Run seqboot on a given file for a given number of bootstraps.
+    """
+    boot_exec = kwarg.pop('boot_exec', boot_exec_default)
+    seqboot_opts = _get_seqboot_opts(fname, n_bootstrap, **kwarg)
+    if os.path.lexists('outfile'):
+        os.remove('outfile')
+    cmdfname = '.cmdfile'
+    with open(cmdfname, 'w') as f:
+        f.write(fname + '\n')
+        for arg in seqboot_opts:
+            f.write(arg + '\n')
+            pass
+        pass
+    # open phylip process
+    p = sub.Popen(boot_exec, stdin=sub.PIPE)
+    # send command file contents as input, wait for output
+    p.communicate(open(cmdfname,'r').read())
+    basename = fname.rpartition('.')[0]
+    bootname = basename + '.boot.phy'
+    try:
+        os.rename('outfile', bootname)
+    except:
+        print('The expected output was not generated. Phylip may have failed')
+        raise
+    try:
+        os.remove(cmdfname)
+    except: raise
+    return bootname
+
+#lst_phy_opts_default = ['S','Y','I','4','5','.']
+def _get_phy_opts(fname, bootstrap, **kwarg):
+    opts = list()
+    opts.append(fname)
+    opts.append('S')
+    opts.append('Y')
+    return opts
+
+def _get_seqboot_opts(fname, n_bootstrap, weights=False, seed=7):
     lst_seqboot_opts = []
     lst_seqboot_opts.append(fname)
     lst_seqboot_opts.append('R')
-    lst_seqboot_opts.append(n_bootstrap)
+    lst_seqboot_opts.append(str(n_bootstrap))
+    # the following to be properly implemented later
     if weights:
         lst_seqboot_opts.append('W')
+        pass
+    # finish putting in options, and confirm
+    lst_seqboot_opts.append('Y')
+    lst_seqboot_opts.append(str(seed))
     return lst_seqboot_opts
 
 def _run_phylip_main():
@@ -270,6 +317,37 @@ def _run_phylip_main():
         run_phylip(fname,
                 phy_exec=lst_cmd_arg,
                 bootstrap=argspace.bootstrap,
+                )
+def _run_seqboot_main():
+    import argparse
+    parser = argparse.ArgumentParser(
+            description="""Bootstrap a set of sequence data using phylip
+            seqboot""",
+            )
+    parser.add_argument('-b', '--bootstrap',
+            dest='bootstrap',
+            const=n_bootstrap_default,
+            nargs='?',
+            default=None,
+            type=int,
+            help="""
+            Provide a number of bootstrap replicates to use for phylip
+            seqboot.
+            If you do not include this flag, seqboot will not be used (i.e.
+            1 bootstrap).
+            If you include this flag with an integer argument,
+            that number of bootstrap replicates will be used.
+            Be careful with large number of bootstraps, since the phylogeny
+            inference will have to be run that much more.
+            If you include this flag without any argument, a default value
+            will be used.
+            (default is {default})
+            """.format(default=n_bootstrap_default),
+            )
+    parser.add_argument('files', nargs='+')
+    argspace = parser.parse_args()
+    for fname in argspace.files:
+        run_seqboot(fname, argspace.bootstrap,
                 )
 
 def _tab2phy_main():
