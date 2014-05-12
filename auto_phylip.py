@@ -8,7 +8,6 @@ import re
 
 phy_exec_default = ['phylip','dnapars']
 boot_exec_default = ['phylip', 'seqboot']
-lst_phy_opts_default = ['S','Y','I','4','5','.','Y']
 n_bootstrap_default = 1000
 
 def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
@@ -143,7 +142,6 @@ def _phyrow(name, sequence):
 
 def run_phylip(
     phy_in,
-    lst_phy_opts=lst_phy_opts_default,
     **kwarg):
     """
     Run a phylip program with a given phylogeny generating executable,
@@ -188,7 +186,7 @@ def run_phylip(
     if os.path.lexists('outtree'):
         os.remove('outtree')
     # write a command file with the specified options
-    lst_phy_opts.insert(0, phy_in)
+    lst_phy_opts = _get_phy_opts(phy_in, bootstrap)
     cmdfname = write_cmdfile(lst_phy_opts, trailing_nl=False)
     # open phylip process
     p = sub.Popen(phy_exec, stdin=sub.PIPE)
@@ -259,16 +257,27 @@ def write_cmdfile(opts, trailing_nl=False):
         f.write(opts[-1])
     return cmdfname
 
-#lst_phy_opts_default = ['S','Y','I','4','5','.']
 def _get_phy_opts(fname, bootstrap, **kwarg):
     opts = list()
+    # first the filename
     opts.append(fname)
-    opts.append('S')
+    # set search option
+    #-----------------
+    opts.append('S')#|
+    opts.append('Y')#|
+    #-----------------
+    # bootstrapped datasets will always be interleaved (AFAIK)
+    if not bootstrap:
+        # specify sequential rather than interleaved data
+        opts.append('I')
+    # these options make the output more rich and thorough
+    #-----------------
+    opts.append('4')#|
+    opts.append('5')#|
+    opts.append('.')#|
+    #-----------------
+    # confirm options
     opts.append('Y')
-    opts.append('I')
-    opts.append('4')
-    opts.append('5')
-    opts.append('.')
     return opts
 
 def _get_seqboot_opts(fname, n_bootstrap, weights=False, seed=7):
