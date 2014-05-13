@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+import auto_phylip
+
+auto_phylip._cleanup_consense_main()

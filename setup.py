@@ -11,6 +11,7 @@ setup(
             'bin/tab2phy',
             'bin/run_seqboot',
             'bin/run_consense',
+            'bin/cleanup_consense',
             ],
         license='LICENSE.txt',
         description='Utilities to help with using PHYLIP',

@@ -175,9 +175,12 @@ def run_phylip(
     phy_exec = kwarg.pop('phy_exec', None)
     if phy_exec == None:
         phy_exec = phy_exec_default
-    # it bootstrap is provided use, otherwise None
+    # if bootstrap is provided use, otherwise None
     bootstrap = kwarg.pop('bootstrap', None)
     if bootstrap:
+        # save the original input *.phy name
+        phy_in_orig = phy_in
+        # for most of following operations, use bootstrapped *.phy file
         phy_in = run_seqboot(phy_in, bootstrap)
     basename = phy_in.rpartition('.')[0]
     # remove old files
@@ -188,7 +191,7 @@ def run_phylip(
     if os.path.lexists('outtree'):
         os.remove('outtree')
     # write a command file with the specified options
-    lst_phy_opts = _get_phy_opts(phy_in, bootstrap)
+    lst_phy_opts = _get_phy_opts(phy_in, bootstrap=bootstrap)
     cmdfname = write_cmdfile(lst_phy_opts, trailing_nl=False)
     # open phylip process
     p = sub.Popen(phy_exec, stdin=sub.PIPE)
@@ -207,6 +210,9 @@ def run_phylip(
     if bootstrap:
         # run consense only if bootstrapping was performed
         run_consense(basename + '.tree', **kwarg)
+        print('Consensus tree is: {name}'.format(name=basename + '.tree'))
+        print('Using original phy file: {name}'.format(name=phy_in_orig))
+        cleanup_consense(basename + '.tree', phy_in_orig)
     return None
 
 def run_seqboot(fname, n_bootstrap, **kwarg):
@@ -266,6 +272,48 @@ def run_consense(fname, **kwarg):
     except: raise
     return None
 
+def cleanup_consense(fname_consensus, fname_orig, **kwarg):
+    """
+    Use a consensus tree, and an original (non-bootstrapped) *.phy input
+    file to generate a cleaned up consensus tree that estimates the true
+    tree.
+    """
+    # if phy_exec is provided, or None, use default
+    phy_exec = kwarg.pop('phy_exec', None)
+    if phy_exec == None:
+        phy_exec = phy_exec_default
+    basename = fname_orig.rpartition('.')[0]
+    # remove old files
+    if os.path.lexists('infile'):
+        os.remove('infile')
+    if os.path.lexists('intree'):
+        os.remove('intree')
+    if os.path.lexists('outfile'):
+        os.remove('outfile')
+    if os.path.lexists('outtree'):
+        os.remove('outtree')
+    # setup options for consensus cleanup
+    lst_phy_opts = _get_phy_opts(fname_orig,
+            fname_tree=fname_consensus,
+            search=False,
+            )
+    cmdfname = write_cmdfile(lst_phy_opts, trailing_nl=False)
+    # open phylip process
+    p = sub.Popen(phy_exec, stdin=sub.PIPE)
+    # send command file contents as input, wait for output
+    p.communicate(open(cmdfname,'r').read())
+    # rename output files
+    try:
+        os.rename('outfile', basename + '.out')
+        os.rename('outtree', basename + '.tree')
+    except:
+        print('The expected output was not generated. Phylip may have failed')
+        raise
+    try:
+        os.remove(cmdfname)
+    except: raise
+    return None
+
 def write_cmdfile(opts, trailing_nl=False):
     """
     Writes a command file for use with PHYLIP programs based on the supplied
@@ -292,18 +340,24 @@ def write_cmdfile(opts, trailing_nl=False):
         f.write(opts[-1])
     return cmdfname
 
-def _get_phy_opts(fname, bootstrap, **kwarg):
+def _get_phy_opts(fname, **kwarg):
     # SLOPPY: hardcoded arbitrary constant
     seed = 7 # must be odd for some reason!?
     # SLOPPY: hardcoded arbitrary constant
     jumble = 10
+    bootstrap = kwarg.pop('bootstrap', False)
+    search = kwarg.pop('search', True)
+    fname_tree = kwarg.pop('fname_tree', None)
     opts = list()
     # first the filename
     opts.append(fname)
     # set search option
     #-----------------
-    opts.append('S')#|
-    opts.append('Y')#|
+    if search:
+        opts.append('S')#|
+        opts.append('Y')#|
+    else:
+        opts.append('U')
     #-----------------
     # bootstrapped datasets will always be interleaved (AFAIK)
     if not bootstrap:
@@ -329,6 +383,11 @@ def _get_phy_opts(fname, bootstrap, **kwarg):
     #-----------------
     # confirm options
     opts.append('Y')
+    if not search:
+        # Phylogeny programs prompt for the filename of the user tree if
+        # told not to search for the best tree.
+        opts.append(fname_tree)
+        opts.append(str(seed))
     return opts
 
 def _get_seqboot_opts(fname, n_bootstrap, weights=False, seed=7):
@@ -468,7 +527,20 @@ def _run_consense_main():
         run_consense(
                 fname,
                 )
-    ### resume here
+    return None
+
+def _cleanup_consense_main():
+    import argparse
+    parser = argparse.ArgumentParser(
+            description='''Correct the branch lengths on a consensus tree''',
+            )
+    parser.add_argument('-p', '--phyfile',
+            dest='phyfile',
+            )
+    parser.add_argument('consensus', nargs='+')
+    argspace = parser.parse_args()
+    for fname in argspace.consensus:
+        cleanup_consense(fname, argspace.phyfile,)
     return None
 
 def _tab2phy_main():
