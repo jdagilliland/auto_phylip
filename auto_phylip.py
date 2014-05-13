@@ -6,13 +6,35 @@ import os
 import subprocess as sub
 import re
 
-phy_exec_default = ['phylip','dnapars']
+phy_exec_default = ['phylip', 'dnapars']
 boot_exec_default = ['phylip', 'seqboot']
 cons_exec = ['phylip', 'consense']
 
 n_bootstrap_default = 1000
 
 def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
+    """
+    Generate a PHYLIP formatted *.phy file from a list of tabfiles.
+
+    A column and a regex may be supplied which will be used to filter
+    the results from the tabfile.
+
+    Parameters
+    ----------
+    lst_tabfile : list
+        A list of tabfiles from which to draw entries to populate the
+        *.phy file.
+    column : str
+        The name of the column whose value must match `match` in order
+        for a given row to be included in the output *.phy file.
+            (default: 'CLONE')
+    match : str
+        A string which will be converted to a regex to match to entries
+        in the tabfiles. (default: None; all rows will be included)
+    flags : int
+        This is a sum of flags to be passed to the regex compiler.
+        (default: 0; default regex settings)
+    """
     match = kwarg.pop('match', None)
     column = kwarg.pop('column', 'CLONE')
     flags = kwarg.pop('flags', 0)
@@ -29,7 +51,11 @@ def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
     return None
 
 def _entry2seqpair(entry):
-    return (entry['SEQUENCE_ID'][-9:],entry['SEQUENCE'])
+    """
+    Convert a tabfile entry into a pair specifying the sequence name to
+    be used in the *.phy file and the sequence itself.
+    """
+    return (entry['SEQUENCE_ID'][-9:], entry['SEQUENCE'])
 
 def lst_entries2phy(lst_dict_entries, outfile, **kwarg):
     """
@@ -68,7 +94,7 @@ def lst_entries2phy(lst_dict_entries, outfile, **kwarg):
     for seqpair in lst_seqpair:
         if len(seqpair[1]) != len_seq:
             raise ValueError('''Not all sequences are of the same length.''')
-    with open(outfile,'wb') as f:
+    with open(outfile, 'wb') as f:
         # write header info
         f.write(_phyrow(n_seq, len_seq))
         # write sequences from tabfile
@@ -89,8 +115,8 @@ def _get_entries(tabfile):
     """
     Get tabfile entries from a tabfile
     """
-    with open(tabfile,'rb') as f:
-        reader = csv.DictReader(f,delimiter='\t')
+    with open(tabfile, 'rb') as f:
+        reader = csv.DictReader(f, delimiter='\t')
         lst_entries = [row for row in reader]
     return lst_entries
 
@@ -140,7 +166,11 @@ def _filter_entries(lst_dict_entries, match=None, column='CLONE', flags=0):
     return lst_dict_entries_match
 
 def _phyrow(name, sequence):
-    return str(name).ljust(10,' ') + str(sequence) + '\n'
+    """
+    Generate a string from a name and a sequence which can be written as
+    a line in a *.phy file.
+    """
+    return str(name).ljust(10, ' ') + str(sequence) + '\n'
 
 def run_phylip(
     phy_in,
@@ -196,7 +226,7 @@ def run_phylip(
     # open phylip process
     p = sub.Popen(phy_exec, stdin=sub.PIPE)
     # send command file contents as input, wait for output
-    p.communicate(open(cmdfname,'r').read())
+    p.communicate(open(cmdfname, 'r').read())
     # rename output files
     try:
         os.rename('outfile', basename + '.out')
@@ -206,7 +236,8 @@ def run_phylip(
         raise
     try:
         os.remove(cmdfname)
-    except: raise
+    except:
+        raise
     if bootstrap:
         # run consense only if bootstrapping was performed
         run_consense(basename + '.tree', **kwarg)
@@ -229,7 +260,7 @@ def run_seqboot(fname, n_bootstrap, **kwarg):
     # open phylip process
     p = sub.Popen(boot_exec, stdin=sub.PIPE)
     # send command file contents as input, wait for output
-    p.communicate(open(cmdfname,'r').read())
+    p.communicate(open(cmdfname, 'r').read())
     basename = fname.rpartition('.')[0]
     bootname = basename + '.boot.phy'
     try:
@@ -239,7 +270,8 @@ def run_seqboot(fname, n_bootstrap, **kwarg):
         raise
     try:
         os.remove(cmdfname)
-    except: raise
+    except:
+        raise
     return bootname
 
 def run_consense(fname, **kwarg):
@@ -259,7 +291,7 @@ def run_consense(fname, **kwarg):
     # open phylip process
     p = sub.Popen(cons_exec, stdin=sub.PIPE)
     # send command file contents as input, wait for output
-    p.communicate(open(cmdfname,'r').read())
+    p.communicate(open(cmdfname, 'r').read())
     basename = fname.rpartition('.')[0]
     try:
         os.rename('outfile', basename + '.cons.out')
@@ -269,7 +301,8 @@ def run_consense(fname, **kwarg):
         raise
     try:
         os.remove(cmdfname)
-    except: raise
+    except:
+        raise
     return None
 
 def cleanup_consense(fname_consensus, fname_orig, **kwarg):
@@ -301,7 +334,7 @@ def cleanup_consense(fname_consensus, fname_orig, **kwarg):
     # open phylip process
     p = sub.Popen(phy_exec, stdin=sub.PIPE)
     # send command file contents as input, wait for output
-    p.communicate(open(cmdfname,'r').read())
+    p.communicate(open(cmdfname, 'r').read())
     # rename output files
     try:
         os.rename('outfile', basename + '.out')
@@ -311,7 +344,8 @@ def cleanup_consense(fname_consensus, fname_orig, **kwarg):
         raise
     try:
         os.remove(cmdfname)
-    except: raise
+    except:
+        raise
     return None
 
 def write_cmdfile(opts, trailing_nl=False):
@@ -334,13 +368,18 @@ def write_cmdfile(opts, trailing_nl=False):
     This is appropriate behavior for _most_ PHYLIP programs.
     """
     cmdfname = '.cmdfile'
-    with open(cmdfname,'w') as f:
+    with open(cmdfname, 'w') as f:
         for arg in opts[:-1]:
             f.write(arg + '\n')
         f.write(opts[-1])
     return cmdfname
 
 def _get_phy_opts(fname, **kwarg):
+    """
+    Based on the filename and optional arguments, get a list of options
+    which can be written on lines of a command file to be fed into
+    PHYLIP phylogeny programs.
+    """
     # SLOPPY: hardcoded arbitrary constant
     seed = 7 # must be odd for some reason!?
     # SLOPPY: hardcoded arbitrary constant
@@ -391,6 +430,11 @@ def _get_phy_opts(fname, **kwarg):
     return opts
 
 def _get_seqboot_opts(fname, n_bootstrap, weights=False, seed=7):
+    """
+    Based on the filename, bootstrap number, and optional arguments,
+    get a list of options which can be written on lines of a command
+    file to be fed into PHYLIP seqboot.
+    """
     lst_seqboot_opts = []
     lst_seqboot_opts.append(fname)
     lst_seqboot_opts.append('R')
@@ -398,13 +442,17 @@ def _get_seqboot_opts(fname, n_bootstrap, weights=False, seed=7):
     # the following to be properly implemented later
     if weights:
         lst_seqboot_opts.append('W')
-        pass
     # finish putting in options, and confirm
     lst_seqboot_opts.append('Y')
     lst_seqboot_opts.append(str(seed))
     return lst_seqboot_opts
 
 def _get_consense_opts(fname, **kwarg):
+    """
+    Based on the filename, and optional arguments,
+    get a list of options which can be written on lines of a command
+    file to be fed into PHYLIP consense.
+    """
     cons_type = kwarg.pop('type', 'mre')
     opts = list()
     opts.append(fname)
@@ -429,6 +477,10 @@ def _get_consense_opts(fname, **kwarg):
     return opts
 
 def _run_phylip_main():
+    """
+    The main runner script for the command `run_phylip`, including the
+    argparse parser.
+    """
     import argparse
     parser = argparse.ArgumentParser(
         description=("Run PHYLIP program to build trees from sequences in a" +
@@ -484,6 +536,10 @@ def _run_phylip_main():
                 bootstrap=argspace.bootstrap,
                 )
 def _run_seqboot_main():
+    """
+    The main runner script for the command `run_seqboot`, including the
+    argparse parser.
+    """
     import argparse
     parser = argparse.ArgumentParser(
             description="""Bootstrap a set of sequence data using phylip
@@ -517,6 +573,10 @@ def _run_seqboot_main():
     return None
 
 def _run_consense_main():
+    """
+    The main runner script for the command `run_consense`, including the
+    argparse parser.
+    """
     import argparse
     parser = argparse.ArgumentParser(
             description='''Build a consensus tree from bootstrapped trees''',
@@ -530,6 +590,10 @@ def _run_consense_main():
     return None
 
 def _cleanup_consense_main():
+    """
+    The main runner script for the command `cleanup_consense`, including the
+    argparse parser.
+    """
     import argparse
     parser = argparse.ArgumentParser(
             description='''Correct the branch lengths on a consensus tree''',
@@ -544,20 +608,24 @@ def _cleanup_consense_main():
     return None
 
 def _tab2phy_main():
+    """
+    The main runner script for the command `tab2phy`, including the
+    argparse parser.
+    """
     import argparse
     parser = argparse.ArgumentParser(
         description='Build a phylip formatted file from a tabfile.',
         )
     parser.add_argument('files', nargs='+')
-    parser.add_argument('-m','--match',
+    parser.add_argument('-m', '--match',
         dest='match',
         default=None,
         )
-    parser.add_argument('-f','--field',
+    parser.add_argument('-f', '--field',
         dest='column',
         default='CLONE',
         )
-    parser.add_argument('-c','--combine',
+    parser.add_argument('-c', '--combine',
         dest='phyfname',
         nargs='?',
         const='file.phy',
