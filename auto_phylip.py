@@ -147,9 +147,9 @@ def _filter_entries(lst_dict_entries, match=None, column='CLONE', flags=0):
     """
     if type(match) == str:
         reg_match = re.compile(match, flags)
-#    elif type(match) == _sre.SRE_Pattern:
-#        # check if the provided match is a compiled regex, if so, use as is
-#        reg_match = match
+    # elif type(match) == _sre.SRE_Pattern:
+    #     # check if the provided match is a compiled regex, if so, use as is
+    #     reg_match = match
     elif match == None:
         # if match not provided, return the supplied lst_dict_entries
         # unchanged
@@ -535,6 +535,7 @@ def _run_phylip_main():
                 phy_exec=lst_cmd_arg,
                 bootstrap=argspace.bootstrap,
                 )
+
 def _run_seqboot_main():
     """
     The main runner script for the command `run_seqboot`, including the
@@ -630,7 +631,7 @@ def _tab2phy_main():
         nargs='?',
         const='file.phy',
         default=None,
-#        default='file.phy',
+        # default='file.phy',
         )
     argspace = parser.parse_args()
     tab2phy(
