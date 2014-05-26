@@ -221,7 +221,7 @@ def run_phylip(
     if os.path.lexists('outtree'):
         os.remove('outtree')
     # write a command file with the specified options
-    lst_phy_opts = _get_phy_opts(phy_in, bootstrap=bootstrap)
+    lst_phy_opts = _get_phy_opts(phy_in, bootstrap=bootstrap, **kwarg)
     cmdfname = write_cmdfile(lst_phy_opts, trailing_nl=False)
     # open phylip process
     p = sub.Popen(phy_exec, stdin=sub.PIPE)
@@ -380,11 +380,13 @@ def _get_phy_opts(fname, **kwarg):
     which can be written on lines of a command file to be fed into
     PHYLIP phylogeny programs.
     """
-    # SLOPPY: hardcoded arbitrary constant
-    seed = 7 # must be odd for some reason!?
-    # SLOPPY: hardcoded arbitrary constant
-    jumble = 10
+    # If seed is not specified, use 9
+    seed = kwarg.pop('seed', 9) # must be 4n+1 for some reason!?
+    # If jumble is not specified, do not jumble
+    jumble = kwarg.pop('jumble', 1)
     bootstrap = kwarg.pop('bootstrap', False)
+    # if bootstrap:
+    #     seed = True
     search = kwarg.pop('search', True)
     fname_tree = kwarg.pop('fname_tree', None)
     opts = list()
@@ -523,6 +525,23 @@ def _run_phylip_main():
             (default is {default})
             """.format(default=n_bootstrap_default),
             )
+    parser.add_argument('-s', '--seed',
+            dest='seed',
+            default=9,
+            type=int,
+            help="""
+            Random seed to use for some PHYLIP programs.
+            """,
+            )
+    parser.add_argument('-j', '--jumble',
+            dest='jumble',
+            default=1,
+            type=int,
+            help="""
+            The number of times to jumble the order of the input
+            sequences.
+            """
+            )
     parser.add_argument('files', nargs='+')
     argspace = parser.parse_args()
     if argspace.command == None:
@@ -534,6 +553,8 @@ def _run_phylip_main():
         run_phylip(fname,
                 phy_exec=lst_cmd_arg,
                 bootstrap=argspace.bootstrap,
+                seed=argspace.seed,
+                jumble=argspace.jumble,
                 )
 
 def _run_seqboot_main():
