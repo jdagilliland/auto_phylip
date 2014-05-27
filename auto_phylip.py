@@ -211,7 +211,7 @@ def run_phylip(
         # save the original input *.phy name
         phy_in_orig = phy_in
         # for most of following operations, use bootstrapped *.phy file
-        phy_in = run_seqboot(phy_in, bootstrap)
+        phy_in = run_seqboot(phy_in, bootstrap, **kwarg)
     basename = phy_in.rpartition('.')[0]
     # remove old files
     if os.path.lexists('infile'):
@@ -431,7 +431,7 @@ def _get_phy_opts(fname, **kwarg):
         opts.append(str(seed))
     return opts
 
-def _get_seqboot_opts(fname, n_bootstrap, weights=False, seed=9):
+def _get_seqboot_opts(fname, n_bootstrap, weights=False, seed=9, **kwarg):
     """
     Based on the filename, bootstrap number, and optional arguments,
     get a list of options which can be written on lines of a command
