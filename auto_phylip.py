@@ -589,7 +589,13 @@ def _run_seqboot_main():
             (default is {default})
             """.format(default=n_bootstrap_default),
             )
-    parser.add_argument('files', nargs='+')
+    parser.add_argument('files', nargs='+',
+            help="""
+            These are the PHY files from which to bootstrap expanded
+            datasets.
+            They are treated independently.
+            """,
+            )
     argspace = parser.parse_args()
     for fname in argspace.files:
         run_seqboot(fname, argspace.bootstrap,
