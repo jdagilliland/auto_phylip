@@ -542,6 +542,9 @@ def _run_phylip_main():
             help="""
             The number of times to jumble the order of the input
             sequences.
+            The more you jumble, the longer run times you will have
+            (about linear), but it does seem to prevent sub-optimal
+            trees coming out.
             """
             )
     parser.add_argument('files', nargs='+')
