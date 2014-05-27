@@ -624,8 +624,22 @@ def _cleanup_consense_main():
             )
     parser.add_argument('-p', '--phyfile',
             dest='phyfile',
+            help="""
+            This PHY file will be used to determine the length of the
+            sequences in the tree, and that way correct the branch
+            lengths.
+            """,
             )
-    parser.add_argument('consensus', nargs='+')
+    parser.add_argument('consensus', nargs='+',
+            help="""
+            This is the consensus tree to clean up.
+            Clean up is done in place, so if you want to preserve the
+            original state of the tree prior to cleanup, you should copy
+            it.
+            You can do this to multiple trees at once, as long as they
+            use the same PHY file, i.e. have the same sequence length.
+            """,
+            )
     argspace = parser.parse_args()
     for fname in argspace.consensus:
         cleanup_consense(fname, argspace.phyfile,)
