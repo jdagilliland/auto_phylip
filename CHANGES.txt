@@ -1,1 +1,4 @@
+v0.1.1, 2014-05-26 -- Among some minor changes, the big feature addition
+was the capability to do bootstrapping enabled by the PHYLIP programs
+seqboot, and consense.
 v0.1.0, 2014-04-17 -- Initial release.
