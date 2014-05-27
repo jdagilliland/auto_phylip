@@ -638,21 +638,44 @@ def _tab2phy_main():
     parser = argparse.ArgumentParser(
         description='Build a phylip formatted file from a tabfile.',
         )
-    parser.add_argument('files', nargs='+')
+    parser.add_argument('files', nargs='+',
+        help="""
+        These are the TAB file[s] that you provide which you use to
+        build the PHY file.
+        Order is important, since some downstream utilities which use
+        the PHY file will treat the first sequence therein as a root
+        sequence.
+        """,
+        )
     parser.add_argument('-m', '--match',
         dest='match',
         default=None,
+        help="""
+        Provide a regex to which to match the specified column of the
+        TAB file.
+        This should be a python style regex, since it goes directly into
+        the python re module.
+        """,
         )
     parser.add_argument('-f', '--field',
         dest='column',
         default='CLONE',
+        help="""
+        Specify the column whose contents to match according to the
+        given regex.
+        """,
         )
     parser.add_argument('-c', '--combine',
         dest='phyfname',
         nargs='?',
         const='file.phy',
         default=None,
-        # default='file.phy',
+        help="""
+        Specify a filename to combine multiple TAB files into a single
+        PHY file.
+        Generally a better time to combine sequence data like this is
+        when generating the tab files in the first place.
+        """,
         )
     argspace = parser.parse_args()
     tab2phy(
