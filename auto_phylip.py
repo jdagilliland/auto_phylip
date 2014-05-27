@@ -605,7 +605,14 @@ def _run_consense_main():
     parser = argparse.ArgumentParser(
             description='''Build a consensus tree from bootstrapped trees''',
             )
-    parser.add_argument('files', nargs='+')
+    parser.add_argument('files', nargs='+',
+            help="""
+            These are the file[s] from which to build consensus trees.
+            Each file should be a self-contained set of trees delimited
+            by semicolons (;).
+            The provided files are treated independently.
+            """,
+            )
     argspace = parser.parse_args()
     for fname in argspace.files:
         run_consense(
