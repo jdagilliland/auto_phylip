@@ -503,6 +503,8 @@ def _run_phylip_main():
             'phylip dnaml' to use DNA maximum likelihood.
             Not all PHYLIP programs that one might choose will output trees,
             or exhibit the predictable behavior on which this script depends.
+            NOTE: Use of this option is not recommended by the author,
+            use at your own risk.
             """
             )
     parser.add_argument('-b', '--bootstrap',
