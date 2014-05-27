@@ -431,7 +431,7 @@ def _get_phy_opts(fname, **kwarg):
         opts.append(str(seed))
     return opts
 
-def _get_seqboot_opts(fname, n_bootstrap, weights=False, seed=7):
+def _get_seqboot_opts(fname, n_bootstrap, weights=False, seed=9):
     """
     Based on the filename, bootstrap number, and optional arguments,
     get a list of options which can be written on lines of a command
@@ -589,6 +589,14 @@ def _run_seqboot_main():
             (default is {default})
             """.format(default=n_bootstrap_default),
             )
+    parser.add_argument('-s', '--seed',
+            dest='seed',
+            default=9,
+            type=int,
+            help="""
+            Random seed to use for seqboot.
+            """,
+            )
     parser.add_argument('files', nargs='+',
             help="""
             These are the PHY files from which to bootstrap expanded
@@ -599,6 +607,7 @@ def _run_seqboot_main():
     argspace = parser.parse_args()
     for fname in argspace.files:
         run_seqboot(fname, argspace.bootstrap,
+                seed=argspace.seed,
                 )
     return None
 
