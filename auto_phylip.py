@@ -12,6 +12,26 @@ cons_exec = ['phylip', 'consense']
 
 n_bootstrap_default = 1000
 
+def set_header_rev(header_rev):
+    ## Switch some global variables based on header rev
+    global id_col
+    global seq_col
+    global clone_col
+    global dmask_col
+    if header_rev == 0:
+        id_col = 'SEQUENCE_ID'
+        seq_col = 'SEQUENCE'
+        clone_col = 'CLONE'
+        dmask_col = 'GERMLINE_GAP_DMASK'
+    elif header_rev == 1:
+        id_col = 'seqID'
+        seq_col = 'sequence'
+        clone_col = 'cloneID'
+        dmask_col = 'germline'
+    else:
+        raise ValueError(
+            'You have selected an invalid header_rev: {:s}'.format(header_rev))
+
 def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
     """
     Generate a PHYLIP formatted *.phy file from a list of tabfiles.
@@ -36,7 +56,7 @@ def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
         (default: 0; default regex settings)
     """
     match = kwarg.pop('match', None)
-    column = kwarg.pop('column', 'CLONE')
+    column = kwarg.pop('column', clone_col)
     flags = kwarg.pop('flags', 0)
     lst_dict_entries = _gather_entries(lst_tabfile)
     lst_dict_entries = _filter_entries(lst_dict_entries,
@@ -50,12 +70,14 @@ def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
     lst_entries2phy(lst_dict_entries, outfile)
     return None
 
+# id_col =
+# seq_col =
 def _entry2seqpair(entry):
     """
     Convert a tabfile entry into a pair specifying the sequence name to
     be used in the *.phy file and the sequence itself.
     """
-    return (entry['SEQUENCE_ID'][-9:], entry['SEQUENCE'])
+    return (entry[id_col][-9:], entry[seq_col])
 
 def lst_entries2phy(lst_dict_entries, outfile, **kwarg):
     """
@@ -84,7 +106,7 @@ def lst_entries2phy(lst_dict_entries, outfile, **kwarg):
         lst_seqpair = [('Germline', germline)] + lst_seqpair
     else:
         dict_germline_seq = dict(
-            [(entry['CLONE'], entry.get('GERMLINE_GAP_DMASK'))
+            [(entry[clone_col], entry.get(dmask_col))
             for entry in lst_dict_entries]
             )
     n_seq = len(lst_seqpair)
@@ -706,6 +728,15 @@ def _tab2phy_main():
         given regex.
         """,
         )
+    parser.add_argument('-r', '--header',
+            dest='header',
+            default=1,
+            type=int,
+            help="""
+            If specified, one can change the version of headers to use.
+            Old-style headers are 0, new-style headers are 1 (default).
+            """,
+            )
     parser.add_argument('-c', '--combine',
         dest='phyfname',
         nargs='?',
@@ -719,6 +750,9 @@ def _tab2phy_main():
         """,
         )
     argspace = parser.parse_args()
+    ## Choose which column names to use for PHY file based on header
+    ## rev.
+    set_header_rev(argspace.header)
     tab2phy(
         argspace.files,
         outfile=argspace.phyfname,
