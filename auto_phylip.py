@@ -58,15 +58,15 @@ def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
     match = kwarg.pop('match', None)
     column = kwarg.pop('column', clone_col)
     flags = kwarg.pop('flags', 0)
-    lst_dict_entries = _gather_entries(lst_tabfile)
-    lst_dict_entries = _filter_entries(lst_dict_entries,
+    iter_dict_all_entries = _gather_entries_iter(lst_tabfile)
+    lst_dict_entries = _filter_entries(iter_dict_all_entries,
         match=match, column=column, flags=flags)
     if outfile == None and len(lst_tabfile) == 1:
         outfile = lst_tabfile[0].rpartition('.')[0] + '.phy'
     elif outfile == None:
         outfile = 'file.phy'
-    print('Found {n_match} matches for {str_match}'.format(
-        n_match=len(lst_dict_entries), str_match=match))
+    print('''Used ({str_match}) for matching...'''.format(
+        str_match=match))
     lst_entries2phy(lst_dict_entries, outfile)
     return None
 
@@ -104,14 +104,16 @@ def lst_entries2phy(lst_dict_entries, outfile, **kwarg):
     lst_seqpair = [_entry2seqpair(entry) for entry in lst_dict_entries]
     if germline:
         lst_seqpair = [('Germline', germline)] + lst_seqpair
-    else:
-        dict_germline_seq = dict(
-            [(entry[clone_col], entry.get(dmask_col))
-            for entry in lst_dict_entries]
-            )
+    # else:
+    #     dict_germline_seq = dict(
+    #         [(entry[clone_col], entry.get(dmask_col))
+    #         for entry in lst_dict_entries]
+    #         )
     n_seq = len(lst_seqpair)
     if n_seq == 0:
         raise ValueError('''No matches found.''')
+    else:
+        print('Found {:d} matches.'.format(n_seq))
     len_seq = len(lst_seqpair[0][1])
     for seqpair in lst_seqpair:
         if len(seqpair[1]) != len_seq:
@@ -133,16 +135,28 @@ def _gather_entries(lst_file):
         lst_entries.extend(_get_entries(tabfile))
     return lst_entries
 
+def _gather_entries_iter(lst_file):
+    for tabfile in lst_file:
+        for entry in _get_entries_iter(tabfile):
+            yield entry
+
 def _get_entries(tabfile):
     """
     Get tabfile entries from a tabfile
     """
-    with open(tabfile, 'rb') as f:
+    with open(tabfile, 'rU') as f:
         reader = csv.DictReader(f, delimiter='\t')
         lst_entries = [row for row in reader]
     return lst_entries
 
-def _filter_entries(lst_dict_entries, match=None, column='CLONE', flags=0):
+def _get_entries_iter(tabfile):
+    with open(tabfile, 'rU') as f:
+        reader = csv.DictReader(f, delimiter='\t')
+        for row in reader:
+            yield row
+
+def _filter_entries(lst_dict_entries, match=None, column='CLONE', flags=0,
+        **kwarg):
     """
     Filter a list of tab file entries `lst_dict_entries` by matching
     the text in a give column `column` to the regex string provided in
@@ -183,8 +197,8 @@ def _filter_entries(lst_dict_entries, match=None, column='CLONE', flags=0):
             or compiled regex.''')
     # I use the match function, because I want users to be specific about
     # whether they want to match the beginning of the string or w/e.
-    lst_dict_entries_match = [entry for entry in lst_dict_entries if
-        reg_match.match(entry.get(column))]
+    lst_dict_entries_match = (entry for entry in lst_dict_entries if
+        reg_match.match(entry.get(column)))
     return lst_dict_entries_match
 
 def _phyrow(name, sequence):
