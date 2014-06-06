@@ -44,29 +44,22 @@ def tab2phy(lst_tabfile, germline=None, outfile=None, **kwarg):
     lst_tabfile : list
         A list of tabfiles from which to draw entries to populate the
         *.phy file.
-    column : str
-        The name of the column whose value must match `match` in order
-        for a given row to be included in the output *.phy file.
-            (default: 'CLONE')
-    match : str
-        A string which will be converted to a regex to match to entries
-        in the tabfiles. (default: None; all rows will be included)
+    match : list of 2-tuple of str
+        Each entry in the list should be a tuple which specifies the
+        column which content to match, and a regex string to match entries.
+        If None or not provided, all rows will be returned.
     flags : int
         This is a sum of flags to be passed to the regex compiler.
         (default: 0; default regex settings)
     """
-    match = kwarg.pop('match', None)
-    column = kwarg.pop('column', clone_col)
-    flags = kwarg.pop('flags', 0)
     iter_dict_all_entries = _gather_entries_iter(lst_tabfile)
-    lst_dict_entries = _filter_entries(iter_dict_all_entries,
-        match=match, column=column, flags=flags)
+    lst_dict_entries = _filter_entries(iter_dict_all_entries, **kwarg)
     if outfile == None and len(lst_tabfile) == 1:
         outfile = lst_tabfile[0].rpartition('.')[0] + '.phy'
     elif outfile == None:
         outfile = 'file.phy'
-    print('''Used ({str_match}) for matching...'''.format(
-        str_match=match))
+    # print('''Used ({str_match}) for matching...'''.format(
+    #     str_match=match))
     lst_entries2phy(lst_dict_entries, outfile)
     return None
 
@@ -155,8 +148,7 @@ def _get_entries_iter(tabfile):
         for row in reader:
             yield row
 
-def _filter_entries(lst_dict_entries, match=None, column='CLONE', flags=0,
-        **kwarg):
+def _filter_entries(lst_entries, **kwarg):
     """
     Filter a list of tab file entries `lst_dict_entries` by matching
     the text in a give column `column` to the regex string provided in
@@ -164,42 +156,45 @@ def _filter_entries(lst_dict_entries, match=None, column='CLONE', flags=0,
 
     Parameters
     ----------
-    lst_dict_entries : list
+    lst_entries : list
         A list of dictionaries which each represent a row of data from a
         tabfile.
-    match : str
-        A regex string to match entries.
-    column : str, optional
-        The column whose data to match (default: 'CLONE').
+    match : list of 2-tuple of str
+        Each entry in the list should be a tuple which specifies the
+        column which content to match, and a regex string to match entries.
+        If None or not provided, all rows will be returned.
     flags : int, optional
         An int representing the flags to apply for the regex matching
         (default: 0, no flags).
 
     Returns
     -------
-    lst_dict_entries_match : list
+    lst_entries : list
         A list of dict entries filtered by the selected column matching the
         regex.
     """
-    if type(match) == str:
-        reg_match = re.compile(match, flags)
-    # elif type(match) == _sre.SRE_Pattern:
-    #     # check if the provided match is a compiled regex, if so, use as is
-    #     reg_match = match
-    elif match == None:
+    ## This is to be a list of tuples like (column, matchstring)
+    match = kwarg.pop('match', list())
+    ## Flags apply to all matches
+    flags = kwarg.pop('flags', 0)
+    if len(match) == 0:
         # if match not provided, return the supplied lst_dict_entries
         # unchanged
-        return lst_dict_entries
-    else:
-        print(match)
-        print(type(match))
-        raise TypeError('''`match` is of inappropriate type, must be `str`
-            or compiled regex.''')
+        return lst_entries
     # I use the match function, because I want users to be specific about
     # whether they want to match the beginning of the string or w/e.
-    lst_dict_entries_match = (entry for entry in lst_dict_entries if
-        reg_match.match(entry.get(column)))
-    return lst_dict_entries_match
+    print('''Using the following match criteria:''')
+    for tpl_match in match:
+        print(tpl_match)
+    for tpl_match in match:
+        lst_entries = _filter_match(lst_entries, tpl_match, flags)
+    return lst_entries
+
+def _filter_match(iter_entries, tpl_match, flags):
+    (col, str_match) = tpl_match
+    reg_match = re.compile(str_match, flags)
+    return (entry for entry in iter_entries if
+            reg_match.match(entry.get(col)))
 
 def _phyrow(name, sequence):
     """
@@ -743,19 +738,15 @@ def _tab2phy_main():
     parser.add_argument('-m', '--match',
         dest='match',
         default=None,
+        action='append',
+        nargs=2,
         help="""
-        Provide a regex to which to match the specified column of the
+        Provide a column and regex to which to match entries of the
         TAB file.
-        This should be a python style regex, since it goes directly into
-        the python re module.
-        """,
-        )
-    parser.add_argument('-f', '--field',
-        dest='column',
-        default='CLONE',
-        help="""
-        Specify the column whose contents to match according to the
-        given regex.
+        The column must be a header of the TAB file.
+        The match should be a python style regex, since it goes directly
+        into the python re module.
+        This argument can be provided multiple times.
         """,
         )
     parser.add_argument('-r', '--header',
@@ -787,6 +778,5 @@ def _tab2phy_main():
         argspace.files,
         outfile=argspace.phyfname,
         match=argspace.match,
-        column=argspace.column,
         )
     return None
