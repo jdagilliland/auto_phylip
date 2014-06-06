@@ -268,7 +268,9 @@ def run_phylip(
         print('Using original phy file: {name}'.format(name=phy_in_orig))
         cleanconstreename = cleanup_consense(constreename, phy_in_orig)
         print('Cleaned consense tree is: {:s}'.format(cleanconstreename))
-    return cleanconstreename
+        return cleanconstreename
+    else:
+        return treename
 
 def run_seqboot(fname, n_bootstrap, **kwarg):
     """
