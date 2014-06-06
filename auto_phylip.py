@@ -236,23 +236,24 @@ def run_phylip(
         phy_in = run_seqboot(phy_in, bootstrap, **kwarg)
     basename = phy_in.rpartition('.')[0]
     # remove old files
-    if os.path.lexists('infile'):
-        os.remove('infile')
-    if os.path.lexists('outfile'):
-        os.remove('outfile')
-    if os.path.lexists('outtree'):
-        os.remove('outtree')
+    _clear_files('infile', 'outfile', 'outtree')
     # write a command file with the specified options
     lst_phy_opts = _get_phy_opts(phy_in, bootstrap=bootstrap, **kwarg)
     cmdfname = write_cmdfile(lst_phy_opts, trailing_nl=False)
     # open phylip process
-    p = sub.Popen(phy_exec, stdin=sub.PIPE)
+    # p = sub.Popen(phy_exec, stdin=sub.PIPE)
+    p = sub.Popen(phy_exec, stdin=sub.PIPE, stdout=sub.PIPE,
+            stderr=sub.PIPE)
     # send command file contents as input, wait for output
-    p.communicate(open(cmdfname, 'r').read())
+    # p.communicate(open(cmdfname, 'r').read())
+    (out, err) = p.communicate(open(cmdfname, 'r').read())
     # rename output files
+    outname = basename + '.out'
+    treename = basename + '.tree'
+    print('Inferred tree[s] on {:s}'.format(treename))
     try:
-        os.rename('outfile', basename + '.out')
-        os.rename('outtree', basename + '.tree')
+        os.rename('outfile', outname)
+        os.rename('outtree', treename)
     except:
         print('The expected output was not generated. Phylip may have failed')
         raise
@@ -262,11 +263,12 @@ def run_phylip(
         raise
     if bootstrap:
         # run consense only if bootstrapping was performed
-        run_consense(basename + '.tree', **kwarg)
-        print('Consensus tree is: {name}'.format(name=basename + '.tree'))
+        constreename = run_consense(basename + '.tree', **kwarg)
+        print('Consensus tree is: {name}'.format(name=constreename))
         print('Using original phy file: {name}'.format(name=phy_in_orig))
-        cleanup_consense(basename + '.tree', phy_in_orig)
-    return None
+        cleanconstreename = cleanup_consense(constreename, phy_in_orig)
+        print('Cleaned consense tree is: {:s}'.format(cleanconstreename))
+    return cleanconstreename
 
 def run_seqboot(fname, n_bootstrap, **kwarg):
     """
@@ -275,14 +277,16 @@ def run_seqboot(fname, n_bootstrap, **kwarg):
     boot_exec = kwarg.pop('boot_exec', boot_exec_default)
     seqboot_opts = _get_seqboot_opts(fname, n_bootstrap, **kwarg)
     # remove old files
-    if os.path.lexists('outfile'):
-        os.remove('outfile')
+    _clear_files('outfile')
     # write a command file with the specified options
     cmdfname = write_cmdfile(seqboot_opts)
     # open phylip process
-    p = sub.Popen(boot_exec, stdin=sub.PIPE)
+    # p = sub.Popen(boot_exec, stdin=sub.PIPE)
+    p = sub.Popen(boot_exec, stdin=sub.PIPE, stdout=sub.PIPE,
+            stderr=sub.PIPE)
     # send command file contents as input, wait for output
-    p.communicate(open(cmdfname, 'r').read())
+    # p.communicate(open(cmdfname, 'r').read())
+    (out, err) = p.communicate(open(cmdfname, 'r').read())
     basename = fname.rpartition('.')[0]
     bootname = basename + '.boot.phy'
     try:
@@ -302,32 +306,33 @@ def run_consense(fname, **kwarg):
     """
     consense_opts = _get_consense_opts(fname, **kwarg)
     # remove old files
-    if os.path.lexists('intree'):
-        os.remove('intree')
-    if os.path.lexists('outfile'):
-        os.remove('outfile')
-    if os.path.lexists('outtree'):
-        os.remove('outtree')
+    _clear_files('intree', 'outfile', 'outtree')
     # write a command file with the specified options
     cmdfname = write_cmdfile(consense_opts)
     # open phylip process
-    p = sub.Popen(cons_exec, stdin=sub.PIPE)
+    # p = sub.Popen(cons_exec, stdin=sub.PIPE)
+    p = sub.Popen(cons_exec, stdin=sub.PIPE, stdout=sub.PIPE,
+            stderr=sub.PIPE)
     # send command file contents as input, wait for output
-    p.communicate(open(cmdfname, 'r').read())
+    # p.communicate(open(cmdfname, 'r').read())
+    (out, err) = p.communicate(open(cmdfname, 'r').read())
     basename = fname.rpartition('.')[0]
+    outname = basename + '.cons.out'
+    treename = basename + '.cons.tree'
     try:
-        os.rename('outfile', basename + '.cons.out')
-        os.rename('outtree', basename + '.cons.tree')
+        os.rename('outfile', outname)
+        os.rename('outtree', treename)
     except:
         print('The expected output was not generated. Phylip may have failed')
         raise
-    try:
-        os.remove(cmdfname)
-    except:
-        raise
-    return None
+    _clear_files(cmdfname)
+    # try:
+    #     os.remove(cmdfname)
+    # except:
+    #     raise
+    return treename
 
-def cleanup_consense(fname_consensus, fname_orig, **kwarg):
+def cleanup_consense(fname_consensus, phy_orig, **kwarg):
     """
     Use a consensus tree, and an original (non-bootstrapped) *.phy input
     file to generate a cleaned up consensus tree that estimates the true
@@ -337,30 +342,28 @@ def cleanup_consense(fname_consensus, fname_orig, **kwarg):
     phy_exec = kwarg.pop('phy_exec', None)
     if phy_exec == None:
         phy_exec = phy_exec_default
-    basename = fname_orig.rpartition('.')[0]
+    basename = phy_orig.rpartition('.')[0]
     # remove old files
-    if os.path.lexists('infile'):
-        os.remove('infile')
-    if os.path.lexists('intree'):
-        os.remove('intree')
-    if os.path.lexists('outfile'):
-        os.remove('outfile')
-    if os.path.lexists('outtree'):
-        os.remove('outtree')
+    _clear_files('infile', 'intree', 'outfile', 'outtree')
     # setup options for consensus cleanup
-    lst_phy_opts = _get_phy_opts(fname_orig,
+    lst_phy_opts = _get_phy_opts(phy_orig,
             fname_tree=fname_consensus,
             search=False,
             )
     cmdfname = write_cmdfile(lst_phy_opts, trailing_nl=False)
     # open phylip process
-    p = sub.Popen(phy_exec, stdin=sub.PIPE)
+    # p = sub.Popen(phy_exec, stdin=sub.PIPE)
+    p = sub.Popen(phy_exec, stdin=sub.PIPE, stdout=sub.PIPE,
+            stderr=sub.PIPE)
     # send command file contents as input, wait for output
-    p.communicate(open(cmdfname, 'r').read())
+    # p.communicate(open(cmdfname, 'r').read())
+    (out, err) = p.communicate(open(cmdfname, 'r').read())
     # rename output files
+    outname = basename + '.out'
+    treename = basename + '.tree'
     try:
-        os.rename('outfile', basename + '.out')
-        os.rename('outtree', basename + '.tree')
+        os.rename('outfile', outname)
+        os.rename('outtree', treename)
     except:
         print('The expected output was not generated. Phylip may have failed')
         raise
@@ -368,7 +371,9 @@ def cleanup_consense(fname_consensus, fname_orig, **kwarg):
         os.remove(cmdfname)
     except:
         raise
-    return None
+    print('Edge length corrected consensus tree is: {:s}'.format(
+        basename + '.tree'))
+    return treename
 
 def write_cmdfile(opts, trailing_nl=False):
     """
@@ -573,9 +578,10 @@ def _run_phylip_main():
     argspace = parser.parse_args()
     if argspace.command == None:
         lst_cmd_arg = None
+        print('''Using default command to run PHYLIP''')
     else:
         lst_cmd_arg = argspace.command.split(' ')
-    print('''Using {args} to run PHYLIP'''.format(args=lst_cmd_arg))
+        print('''Using {args} to run PHYLIP'''.format(args=lst_cmd_arg))
     for fname in argspace.files:
         run_phylip(fname,
                 phy_exec=lst_cmd_arg,
@@ -691,6 +697,14 @@ def _cleanup_consense_main():
     for fname in argspace.consensus:
         cleanup_consense(fname, argspace.phyfile,)
     return None
+
+def _clear_files(*lstfname):
+    """
+    Clear out selected files if they exist.
+    """
+    for fname in lstfname:
+        if os.path.lexists(fname):
+            os.remove(fname)
 
 def _tab2phy_main():
     """
