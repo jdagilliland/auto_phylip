@@ -374,7 +374,11 @@ def cleanup_consense(fname_consensus, phy_orig, **kwarg):
     treename = basename + '.tree'
     try:
         os.rename('outfile', outname)
-        os.rename('outtree', treename)
+        # At this point, the output tree still has a leading and meaningless
+        # first line, which will cause problems down the line.
+        # So, we have to strip out that first line.
+        _strip_first_lines('outtree', fname_out=treename)
+        # os.rename('outtree', treename)
     except:
         print('The expected output was not generated. Phylip may have failed')
         raise
@@ -383,7 +387,7 @@ def cleanup_consense(fname_consensus, phy_orig, **kwarg):
     except:
         raise
     print('Edge length corrected consensus tree is: {:s}'.format(
-        basename + '.tree'))
+        treename))
     return treename
 
 def write_cmdfile(opts, trailing_nl=False):
@@ -716,6 +720,38 @@ def _clear_files(*lstfname):
     for fname in lstfname:
         if os.path.lexists(fname):
             os.remove(fname)
+
+def _strip_first_lines(fname_in, **kwarg):
+    """
+    Strip the first line out of a file.
+    If fname_out is not provided, fname_in is used instead (overwriting
+    the original file), but a temporary file is used in order to avoid
+    using up a whole lot of memory for big files.
+
+    Parameters
+    ----------
+    fname_in : str
+        The file name of the file from which you want to strip the first
+        line.
+    n_lines : int, optional
+        The number of initial lines to strip. (default: 1)
+    fname_out : str, optional
+        The file name to which to write the stripped file data.
+        (default: fname_in)
+    """
+    print('Stripping first line...')
+    # If fname_out is provided, use it, otherwise, set to the same as
+    # fname_in.
+    fname_out = kwarg.pop('fname_out', fname_in)
+    # By default, remove only the first line.
+    n_lines = kwarg.pop('n_lines', 1)
+    if fname_in != fname_out:
+        with open(fname_out, 'wb') as f_out, open(fname_in, 'rU') as f_in:
+            # Get rid of those useless first lines
+            for iI in range(n_lines):
+               f_in.readline()
+            f_out.writelines(f_in)
+    return fname_out
 
 def _tab2phy_main():
     """
